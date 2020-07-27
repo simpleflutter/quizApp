@@ -25,14 +25,18 @@ class Register extends StatelessWidget {
               SizedBox(height: 80),
               AppTextField(),
               SizedBox(height: 32),
-              AppButton(
-                  text: 'Register',
-                  onPressed: () {
-                    if (_formKey.currentState.validate()) {
-                      //save name to database & jump to home page
-                      AppNavigator.push(context, Dashboard());
-                    }
-                  }),
+              Padding(
+                padding: const EdgeInsets.all(0.0),
+                child: AppButton(
+                    text: 'Register',
+                    height: 45,
+                    onPressed: () {
+                      if (_formKey.currentState.validate()) {
+                        //save name to database & jump to home page
+                        AppNavigator.push(context, Dashboard());
+                      }
+                    }),
+              ),
             ],
           ),
         ),

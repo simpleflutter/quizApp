@@ -28,6 +28,7 @@ class _QuizScreenState extends State<QuizScreen> {
         height: double.infinity,
         margin: EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.only(top: 20, bottom: 0),
@@ -97,7 +98,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 itemCount: 20,
                 itemBuilder: (BuildContext context, int index) {
                   return QuestionNumber(
-                    number: index,
+                    number: index+1,
                     isSelected: index == selectedQuestionIndex ? true : false,
                     onTap: () {
                       itemScrollController.jumpTo(
@@ -122,13 +123,13 @@ class _QuizScreenState extends State<QuizScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: SimpleText(
                         text:
-                            'In object-oriented programming, new classes can be defined by extending existing classes. This is an example of:',
+                            'In object-oriented programming, new classes can be defined by extending existing classes. This is an example of:\nNext line\nNext line',
                         fontSize: 21,
                       ),
                     ),
 
                     Option(
-                      optionText: 'Encapsulation',
+                      optionText: 'Encapsulation\nNext Line\nNext Line',
                       index: 0,
                       isSelected: optionSelected[0],
                       onTap: () {
@@ -136,7 +137,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       },
                     ),
                     Option(
-                      optionText: 'Interface',
+                      optionText: 'Interface\nNext Line\nNext Line',
                       index: 1,
                       isSelected: optionSelected[1],
                       onTap: () {
@@ -144,7 +145,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       },
                     ),
                     Option(
-                      optionText: 'Composition',
+                      optionText: 'Composition\nNext Line\nNext Line',
                       index: 2,
                       isSelected: optionSelected[2],
                       onTap: () {
@@ -152,7 +153,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       },
                     ),
                     Option(
-                      optionText: 'Inheritance',
+                      optionText: 'Inheritance\nNext Line\nNext Line',
                       index: 3,
                       isSelected: optionSelected[3],
                       onTap: () {
@@ -170,10 +171,11 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
       bottomNavigationBar: Container(
         width: double.infinity,
+      //  color: Colors.red,
         //   height: 40,
-        margin: EdgeInsets.symmetric(vertical: 0, horizontal: 18),
+        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 18),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             AppButton(
@@ -188,9 +190,12 @@ class _QuizScreenState extends State<QuizScreen> {
                 });
               },
             ),
+            SizedBox(width: 16),
             AppButton(
               height: 40,
               text: 'Next',
+              //color: Colors.grey.shade300,
+              
               onPressed: () {
                 setState(() {
                   selectedQuestionIndex++;
