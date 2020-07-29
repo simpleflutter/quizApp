@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:quiz/screens/quiz_screen.dart';
+import 'package:quiz/screens/quiz_setup.dart';
+import 'package:quiz/services/db_helper.dart';
+import 'package:quiz/services/quiz_db.dart';
+import 'package:quiz/utils/app_navigator.dart';
 import 'package:quiz/widgets/app_button.dart';
 import 'package:quiz/widgets/bold_text.dart';
 import 'package:quiz/widgets/course.dart';
@@ -11,8 +16,12 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
+  DBHelper helper = DBHelper.instance;
+
   @override
   Widget build(BuildContext context) {
+    helper.database;
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -38,7 +47,15 @@ class _DashboardState extends State<Dashboard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Course(text: 'C'),
+                Course(
+                  text: 'C',
+                  onPressed: () {
+                    AppNavigator.push(
+                      context,
+                      QuizSetup(),
+                    );
+                  },
+                ),
                 Course(text: 'C++'),
                 Course(text: 'DS'),
                 Course(text: 'Java'),
