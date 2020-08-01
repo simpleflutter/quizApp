@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:quiz/models/question.dart';
 import 'package:quiz/screens/dummy.dart';
+import 'package:quiz/services/quiz_db.dart';
 import 'package:quiz/utils/app_navigator.dart';
 import 'package:quiz/widgets/app_button.dart';
 import 'package:quiz/widgets/bold_text.dart';
@@ -11,17 +15,104 @@ import 'package:quiz/widgets/simple_text.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class QuizScreen extends StatefulWidget {
+  final String course;
+  final String level;
+  final List<int> questionIds;
+
+  QuizScreen(this.course, this.level, this.questionIds);
+
   @override
   _QuizScreenState createState() => _QuizScreenState();
 }
 
 class _QuizScreenState extends State<QuizScreen> {
+  //Timmer variables
+  int questions;
+  Function onTimerEnd;
+
+  //
+  int remainingSeconds;
+  String timing = '';
+  Color color;
+
+  //
+
   ItemScrollController itemScrollController = ItemScrollController();
   List<bool> optionSelected = [false, false, false, false];
   int selectedQuestionIndex = 0;
+  Question question;
+  List<String> userAnswers = [];
+  String currentAnswer;
+  List<int> answerCount = [];
+
+  @override
+  void initState() {
+    for (int i = 0; i < widget.questionIds.length; i++) {
+      userAnswers.add('Unanswered');
+      answerCount.add(0);
+    }
+
+    getQuestion(widget.questionIds[selectedQuestionIndex]);
+    questions = widget.questionIds.length;
+
+    super.initState();
+
+    remainingSeconds = questions * 30;
+    Timer.periodic(
+      Duration(seconds: 1),
+      (Timer t) {
+        setState(
+          () {
+            timing = Duration(seconds: remainingSeconds).toString();
+            timing = timing.split('.')[0];
+            timing = timing.split(':')[1] + ' : ' + timing.split(':')[2];
+            remainingSeconds--;
+
+            if (remainingSeconds <= 120) color = Colors.red;
+
+            if (remainingSeconds == 0) {
+              endExam();
+            }
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+  }
+
+  void getQuestion(int id) async {
+    Question temp = await QuizDB.instance.getQuestion(id);
+
+    setState(() {
+      question = temp;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    // print('no of question = $widget.questionIds.length');
+
+    getQuestion(widget.questionIds[selectedQuestionIndex]);
+    optionSelected = [false, false, false, false];
+
+    // print(optionSelected);
+
+    if (userAnswers[selectedQuestionIndex] != null) {
+      //print('here ${userAnswers[selectedQuestionIndex]}');
+      int index = userAnswers[selectedQuestionIndex].codeUnitAt(0) - 65;
+      //print('index $index');
+      if (index >= 0 && index <= 3) {
+        setState(() {
+          optionSelected[index] = true;
+        });
+      }
+    }
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -39,12 +130,12 @@ class _QuizScreenState extends State<QuizScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  BoldText(text: 'C Language'),
+                  BoldText(text: widget.course),
                   InkWell(
                     child: BoldText(
                         text: 'End Quiz', fontSize: 14, color: Colors.red),
                     onTap: () {
-                      //
+                      endExam();
                     },
                   ),
                 ],
@@ -59,17 +150,17 @@ class _QuizScreenState extends State<QuizScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
                       QuizCardStatus(
-                        number: '5/20',
+                        number: '${getAnsweredQuestionsCount()}/$questions',
                         text: 'Answered',
                         color: Colors.green,
                       ),
                       QuizCardStatus(
-                        number: '7/20',
+                        number: '${getSkippedQuestionsCount()}/$questions',
                         text: 'Skipped',
                         color: Colors.orange,
                       ),
                       QuizCardStatus(
-                        number: '8/20',
+                        number: '${getUnseenQuestionsCount()}/$questions',
                         text: 'Unseen',
                         color: Colors.grey,
                       ),
@@ -78,11 +169,20 @@ class _QuizScreenState extends State<QuizScreen> {
                 ),
                 Expanded(
                   flex: 2,
-                  child: QuizTimer(
-                      questions: 20,
-                      onTimerEnd: () {
-                        // AppNavigator.push(context, Dummy());
-                      }),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: <Widget>[
+                      SimpleText(
+                        text: 'Timer',
+                        fontSize: 13,
+                      ),
+                      BoldText(
+                        text: timing,
+                        fontSize: 15,
+                        color: color,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -95,10 +195,11 @@ class _QuizScreenState extends State<QuizScreen> {
               child: ScrollablePositionedList.builder(
                 itemScrollController: itemScrollController,
                 scrollDirection: Axis.horizontal,
-                itemCount: 20,
+                itemCount: widget.questionIds.length,
                 itemBuilder: (BuildContext context, int index) {
                   return QuestionNumber(
-                    number: index+1,
+                    color: getQuestionColor(index),
+                    number: index + 1,
                     isSelected: index == selectedQuestionIndex ? true : false,
                     onTap: () {
                       itemScrollController.jumpTo(
@@ -114,6 +215,19 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
 
             Divider(color: Colors.grey),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: <Widget>[
+                SimpleText(
+                  text:
+                      'Current Ans :${getCurrentAnswer(selectedQuestionIndex)} ',
+                ),
+                SimpleText(
+                  text: 'Score : ${getScore()}/$questions',
+                ),
+              ],
+            ),
+
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -122,14 +236,13 @@ class _QuizScreenState extends State<QuizScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: SimpleText(
-                        text:
-                            'In object-oriented programming, new classes can be defined by extending existing classes. This is an example of:\nNext line\nNext line',
+                        text: question.questionText,
                         fontSize: 21,
                       ),
                     ),
 
                     Option(
-                      optionText: 'Encapsulation\nNext Line\nNext Line',
+                      optionText: question.optiona,
                       index: 0,
                       isSelected: optionSelected[0],
                       onTap: () {
@@ -137,7 +250,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       },
                     ),
                     Option(
-                      optionText: 'Interface\nNext Line\nNext Line',
+                      optionText: question.optionb,
                       index: 1,
                       isSelected: optionSelected[1],
                       onTap: () {
@@ -145,7 +258,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       },
                     ),
                     Option(
-                      optionText: 'Composition\nNext Line\nNext Line',
+                      optionText: question.optionc,
                       index: 2,
                       isSelected: optionSelected[2],
                       onTap: () {
@@ -153,7 +266,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       },
                     ),
                     Option(
-                      optionText: 'Inheritance\nNext Line\nNext Line',
+                      optionText: question.optiond,
                       index: 3,
                       isSelected: optionSelected[3],
                       onTap: () {
@@ -171,7 +284,7 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
       bottomNavigationBar: Container(
         width: double.infinity,
-      //  color: Colors.red,
+        //  color: Colors.red,
         //   height: 40,
         margin: EdgeInsets.symmetric(vertical: 4, horizontal: 18),
         child: Row(
@@ -181,29 +294,41 @@ class _QuizScreenState extends State<QuizScreen> {
             AppButton(
               height: 40,
               text: 'Previous',
-              onPressed: () {
-                setState(() {
-                  selectedQuestionIndex--;
-                  itemScrollController.jumpTo(
-                    index: selectedQuestionIndex,
-                  );
-                });
-              },
+              color: selectedQuestionIndex == 0 ? Colors.grey : null,
+              onPressed: selectedQuestionIndex == 0
+                  ? () {}
+                  : () {
+                      setState(() {
+                        selectedQuestionIndex--;
+                        itemScrollController.jumpTo(
+                          index: selectedQuestionIndex,
+                        );
+                      });
+                    },
             ),
             SizedBox(width: 16),
             AppButton(
               height: 40,
               text: 'Next',
-              //color: Colors.grey.shade300,
-              
-              onPressed: () {
-                setState(() {
-                  selectedQuestionIndex++;
-                  itemScrollController.jumpTo(
-                    index: selectedQuestionIndex,
-                  );
-                });
-              },
+              color: selectedQuestionIndex == widget.questionIds.length - 1
+                  ? Colors.grey
+                  : null,
+              onPressed: selectedQuestionIndex == widget.questionIds.length - 1
+                  ? () {}
+                  : () {
+                      setState(() {
+                        if (userAnswers[selectedQuestionIndex] ==
+                                'Unanswered' ||
+                            userAnswers[selectedQuestionIndex] == null) {
+                          userAnswers[selectedQuestionIndex] = null;
+                        }
+
+                        selectedQuestionIndex++;
+                        itemScrollController.jumpTo(
+                          index: selectedQuestionIndex,
+                        );
+                      });
+                    },
             ),
           ],
         ),
@@ -228,6 +353,86 @@ class _QuizScreenState extends State<QuizScreen> {
       value = String.fromCharCode(index + 65);
     }
     // print(value);
+    userAnswers[selectedQuestionIndex] = value; // A, B, C, D
+    //print('inside makeselection ${userAnswers[selectedQuestionIndex]}');
+
+    if (getCurrentAnswer(selectedQuestionIndex)) {
+      answerCount[selectedQuestionIndex] = 1;
+    } else {
+      answerCount[selectedQuestionIndex] = 0;
+    }
+
     return value;
+  }
+
+  
+
+  int getUnseenQuestionsCount() {
+    int count = 0;
+
+    for (int i = 0; i < questions; i++) {
+      if (userAnswers[i] != null) {
+        if (userAnswers[i].contains('Unanswered')) count++;
+        //if(userAnswers[i]=='Unanswered') count++;
+      }
+    }
+    return count;
+  }
+
+  int getAnsweredQuestionsCount() {
+    int count = 0;
+
+    for (int i = 0; i < questions; i++) {
+      if (userAnswers[i] != null) {
+        if (userAnswers[i].contains('A') ||
+            userAnswers[i].contains('B') ||
+            userAnswers[i].contains('C') ||
+            userAnswers[i].contains('D')) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  int getSkippedQuestionsCount() {
+    int count =
+        questions - (getAnsweredQuestionsCount() + getUnseenQuestionsCount());
+
+    return count;
+  }
+
+  Color getQuestionColor(index) {
+    if (userAnswers[index] == null) return Colors.orange;
+
+    if (userAnswers[index].contains('A') ||
+        userAnswers[index].contains('B') ||
+        userAnswers[index].contains('C') ||
+        userAnswers[index].contains('D')) {
+      return Colors.green;
+    }
+
+    return Colors.grey;
+  }
+
+  bool getCurrentAnswer(int index) {
+    if (userAnswers[index] != null) {
+      if (userAnswers[index] == question.answer) return true;
+    }
+    return false;
+  }
+
+  int getScore() {
+    int score = 0;
+
+    for (int i = 0; i < questions; i++) {
+      score += answerCount[i];
+    }
+    return score;
+  }
+
+  // last task when exam ends
+  void endExam() {
+    //
   }
 }

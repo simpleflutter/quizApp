@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:quiz/screens/quiz_screen.dart';
 import 'package:quiz/services/quiz_db.dart';
+import 'package:quiz/utils/app_navigator.dart';
+import 'package:quiz/widgets/app_button.dart';
 import 'package:quiz/widgets/bold_text.dart';
 import 'package:quiz/widgets/simple_text.dart';
 
@@ -56,6 +59,7 @@ class _QuizSetupState extends State<QuizSetup> {
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     // chose course form user
                     Row(
@@ -116,6 +120,7 @@ class _QuizSetupState extends State<QuizSetup> {
                             onChanged: (newValue) {
                               setState(() {
                                 questions = newValue;
+                               // print('q = $questions');
                                 getQuestionNumbers();
                               });
                             },
@@ -127,6 +132,17 @@ class _QuizSetupState extends State<QuizSetup> {
                                 )
                             ])
                       ],
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: AppButton(
+                        text: 'Start Quiz',
+                        height: 45,
+                        onPressed: () {
+                          startQuiz(selectedCourse, selectedLevel, questions);
+                        },
+                      ),
                     )
                   ],
                 ),
@@ -141,5 +157,16 @@ class _QuizSetupState extends State<QuizSetup> {
     setState(() {
       questionsCount = temp;
     });
+  }
+
+  void startQuiz(String course, String level, int no) async {
+    List<int> questionsIdList = await quizDB.getQuestionIds(course, level, no);
+    print(questionsIdList);
+
+
+    AppNavigator.push(
+      context,
+      QuizScreen(course, level, questionsIdList),
+    );
   }
 }

@@ -6,8 +6,9 @@ class QuestionNumber extends StatelessWidget {
   final int number;
   final bool isSelected;
   final Function onTap;
+  final Color color;
 
-  QuestionNumber({this.number, this.isSelected, this.onTap});
+  QuestionNumber({this.number, this.isSelected, this.onTap, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +33,10 @@ class QuestionNumber extends StatelessWidget {
               child: CircleAvatar(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 radius: 25,
-                child: SimpleText(
+                child: BoldText(
                   text: '$number',
                   fontSize: 18,
+                  color: color,
                 ),
               ),
             ),

@@ -1,3 +1,4 @@
+import 'package:quiz/models/question.dart';
 import 'package:sqflite/sqflite.dart';
 import 'db_helper.dart';
 
@@ -65,5 +66,79 @@ class QuizDB {
 
     int counter = maps[0]['counter'];
     return counter;
+  }
+
+  // get question ids for selected course, level & number of questions
+  Future<List<int>> getQuestionIds(String course, String level, int no) async {
+    int courseId = await getGetCourseId(course);
+
+    Database db = await DBHelper.instance.database;
+
+    List<Map<String, dynamic>> maps = await db.rawQuery(
+        'select id from questions where course_id=? and level=?',
+        [courseId, level]);
+
+    List<int> questionIds = [];
+
+    for (int i = 0; i < maps.length; i++) {
+      questionIds.add(maps[i]['id']);
+    }
+
+    questionIds.shuffle();
+    questionIds = questionIds.sublist(0, no);
+
+    return questionIds;
+  }
+
+  //get question data for given question id
+  Future<Question> getQuestion(int id) async {
+    Database db = await DBHelper.instance.database;
+
+    List<Map<String, dynamic>> map =
+        await db.rawQuery('select * from questions where id=?', [id]);
+
+    Question q = Question.fromMap(map[0]);
+
+    return q;
+  }
+
+  //Store quiz data in database
+  storeQuizData(
+      String course,
+      String quizTime,
+      String quizDate,
+      String level,
+      String quizQuestions,
+      String quizAnswers,
+      int totalQuestions,
+      int answers,
+      int unanswered,
+      int correct,
+      int wrong,
+      int score) async {
+    int courseId = await getGetCourseId(course);
+
+    Database db = await DBHelper.instance.database;
+
+    int result = await db.rawInsert(
+        'insert into quiz values(null, ?, ?, ?, ?, ? ,? ? ,? , ? , ? ,? , ?)', [
+      course,
+      quizTime,
+      quizDate,
+      level,
+      quizQuestions,
+      quizAnswers,
+      totalQuestions,
+      answers,
+      unanswered,
+      correct,
+      wrong,
+      score
+    ]);
+
+    if(result == 1)
+      print('quiz data added');
+    else
+     print('unable to add quiz data')  ;
   }
 }
