@@ -1,8 +1,10 @@
 import 'dart:async';
-
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 import 'package:quiz/models/question.dart';
 import 'package:quiz/screens/dummy.dart';
+import 'package:quiz/screens/result_screen.dart';
 import 'package:quiz/services/quiz_db.dart';
 import 'package:quiz/utils/app_navigator.dart';
 import 'package:quiz/widgets/app_button.dart';
@@ -44,6 +46,7 @@ class _QuizScreenState extends State<QuizScreen> {
   List<String> userAnswers = [];
   String currentAnswer;
   List<int> answerCount = [];
+  BuildContext appContext;
 
   @override
   void initState() {
@@ -71,7 +74,7 @@ class _QuizScreenState extends State<QuizScreen> {
             if (remainingSeconds <= 120) color = Colors.red;
 
             if (remainingSeconds == 0) {
-              endExam();
+              confirmEndExam(true, appContext);
             }
           },
         );
@@ -96,6 +99,7 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   Widget build(BuildContext context) {
     // print('no of question = $widget.questionIds.length');
+    appContext = context;
 
     getQuestion(widget.questionIds[selectedQuestionIndex]);
     optionSelected = [false, false, false, false];
@@ -135,7 +139,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     child: BoldText(
                         text: 'End Quiz', fontSize: 14, color: Colors.red),
                     onTap: () {
-                      endExam();
+                      confirmEndExam(false, context);
                     },
                   ),
                 ],
@@ -146,26 +150,7 @@ class _QuizScreenState extends State<QuizScreen> {
               children: <Widget>[
                 Expanded(
                   flex: 3,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      QuizCardStatus(
-                        number: '${getAnsweredQuestionsCount()}/$questions',
-                        text: 'Answered',
-                        color: Colors.green,
-                      ),
-                      QuizCardStatus(
-                        number: '${getSkippedQuestionsCount()}/$questions',
-                        text: 'Skipped',
-                        color: Colors.orange,
-                      ),
-                      QuizCardStatus(
-                        number: '${getUnseenQuestionsCount()}/$questions',
-                        text: 'Unseen',
-                        color: Colors.grey,
-                      ),
-                    ],
-                  ),
+                  child: getQuestionStatus(),
                 ),
                 Expanded(
                   flex: 2,
@@ -215,18 +200,18 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
 
             Divider(color: Colors.grey),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                SimpleText(
-                  text:
-                      'Current Ans :${getCurrentAnswer(selectedQuestionIndex)} ',
-                ),
-                SimpleText(
-                  text: 'Score : ${getScore()}/$questions',
-                ),
-              ],
-            ),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+            //   children: <Widget>[
+            //     SimpleText(
+            //       text:
+            //           'Current Ans :${getCurrentAnswer(selectedQuestionIndex)} ',
+            //     ),
+            //     SimpleText(
+            //       text: 'Score : ${getScore()}/$questions',
+            //     ),
+            //   ],
+            // ),
 
             Expanded(
               child: SingleChildScrollView(
@@ -365,8 +350,6 @@ class _QuizScreenState extends State<QuizScreen> {
     return value;
   }
 
-  
-
   int getUnseenQuestionsCount() {
     int count = 0;
 
@@ -431,8 +414,133 @@ class _QuizScreenState extends State<QuizScreen> {
     return score;
   }
 
+  void confirmEndExam(bool isTimeEnd, BuildContext context) async {
+    String msg;
+
+    if (isTimeEnd)
+      msg = 'Sorry! Your time is over.\n\n';
+    else
+      msg = 'Are you sure to end quiz?\n\n';
+
+    AlertDialog alertDialog = AlertDialog(
+      title: BoldText(text: 'Quiz End'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          SimpleText(
+            text: msg,
+          ),
+          getQuestionStatus(),
+        ],
+      ),
+      actions: <Widget>[
+        isTimeEnd
+            ? FlatButton(
+                onPressed: () {
+                  Navigator.pop(context, true);
+                  //endExam();
+                  return true;
+                },
+                child: SimpleText(
+                  text: 'Ok',
+                ),
+              )
+            : Row(
+                children: <Widget>[
+                  FlatButton(
+                    onPressed: () async {
+                      Navigator.pop(context, true);
+                    },
+                    child: SimpleText(
+                      text: 'Yes',
+                    ),
+                  ),
+                  FlatButton(
+                    onPressed: () {
+                      Navigator.pop(context, false);
+                      return false;
+                    },
+                    child: SimpleText(
+                      text: 'No',
+                    ),
+                  ),
+                ],
+              ),
+      ],
+    );
+
+    bool userResponse = await showDialog(
+      context: appContext,
+      child: alertDialog,
+    );
+
+    print('userResponse $userResponse');
+
+    if (userResponse == true) endExam();
+  }
+
   // last task when exam ends
-  void endExam() {
+  void endExam() async {
     //
+    int t = questions * 30 - remainingSeconds;
+    String quizTime = Duration(seconds: t).toString();
+    quizTime = quizTime.split('.')[0];
+    quizTime = quizTime.split(':')[1] + ' : ' + quizTime.split(':')[2];
+
+    //
+    var d = DateTime.now();
+    String quizDate =
+        d.day.toString() + "/" + d.month.toString() + "/" + d.year.toString();
+
+    //
+    String quizQuestions = '';
+    String quizAnswers = '';
+    for (int i = 0; i < questions; i++) {
+      quizQuestions = quizQuestions + widget.questionIds[i].toString() + ',';
+      quizAnswers = quizAnswers + userAnswers[i].toString() + ',';
+    }
+
+    //
+    int score = ((getScore() / questions) * 100).ceil();
+
+    //
+   int currentQizId = await QuizDB.instance.storeQuizData(
+        widget.course,
+        quizTime,
+        quizDate,
+        widget.level,
+        quizQuestions,
+        quizAnswers,
+        questions,
+        getAnsweredQuestionsCount(),
+        questions - getAnsweredQuestionsCount(),
+        getScore(),
+        questions - getScore(),
+        score);
+
+    AppNavigator.pushReplacement(appContext, ResultScreen(score, questions, getScore(), currentQizId));
+  }
+
+  Widget getQuestionStatus() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        QuizCardStatus(
+          number: '${getAnsweredQuestionsCount()}/$questions',
+          text: 'Answered',
+          color: Colors.green,
+        ),
+        QuizCardStatus(
+          number: '${getSkippedQuestionsCount()}/$questions',
+          text: 'Skipped',
+          color: Colors.orange,
+        ),
+        QuizCardStatus(
+          number: '${getUnseenQuestionsCount()}/$questions',
+          text: 'Unseen',
+          color: Colors.grey,
+        ),
+      ],
+    );
   }
 }

@@ -103,7 +103,7 @@ class QuizDB {
   }
 
   //Store quiz data in database
-  storeQuizData(
+  Future<int> storeQuizData(
       String course,
       String quizTime,
       String quizDate,
@@ -120,25 +120,16 @@ class QuizDB {
 
     Database db = await DBHelper.instance.database;
 
-    int result = await db.rawInsert(
-        'insert into quiz values(null, ?, ?, ?, ?, ? ,? ? ,? , ? , ? ,? , ?)', [
-      course,
-      quizTime,
-      quizDate,
-      level,
-      quizQuestions,
-      quizAnswers,
-      totalQuestions,
-      answers,
-      unanswered,
-      correct,
-      wrong,
-      score
-    ]);
+    String sqlCommand =
+        "insert into quiz values(null, $courseId, '$quizTime', '$quizDate', '$level', '$quizQuestions', '$quizAnswers', $totalQuestions, $answers, $unanswered, $correct, $wrong, $score)";
 
-    if(result == 1)
-      print('quiz data added');
-    else
-     print('unable to add quiz data')  ;
+    await db.rawInsert(sqlCommand);
+
+    List<Map<String, dynamic>> maps =
+        await db.rawQuery('select max(id) as quiz_id from quiz');
+
+    int currentQizId = maps[0]['quiz_id'];
+
+    return currentQizId;
   }
 }
