@@ -1,6 +1,7 @@
 import 'package:quiz/models/question.dart';
 import 'package:sqflite/sqflite.dart';
 import 'db_helper.dart';
+import 'package:quiz/models/quiz.dart';
 
 class QuizDB {
   // single tone class
@@ -23,6 +24,19 @@ class QuizDB {
     }
 
     return courses;
+  }
+
+  // get name of course from id
+  Future<String> getCourseName(int id) async {
+    Database db = await DBHelper.instance.database;
+
+    List<Map<String, dynamic>> maps = await db.query('courses',
+        columns: ['name'], where: 'id=?', whereArgs: [id]);
+    //select name from courses
+
+    String course = maps[0]['name'];
+
+    return course;
   }
 
   // get different levels from questions table
@@ -131,5 +145,21 @@ class QuizDB {
     int currentQizId = maps[0]['quiz_id'];
 
     return currentQizId;
+  }
+
+  Future<List<Quiz>> getAllQuizData() async {
+    Database db = await DBHelper.instance.database;
+
+    List<Map<String, dynamic>> maps =
+        await db.rawQuery('select * from quiz order by id desc');
+
+    List<Quiz> quizes = [];
+
+    for (int i = 0; i < maps.length; i++) {
+      quizes.add(Quiz.fromMap(maps[i]));
+    }
+    print('Inside getAllQuizData()');
+    print(quizes);
+    return quizes;
   }
 }

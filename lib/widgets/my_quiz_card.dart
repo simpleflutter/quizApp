@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:quiz/models/quiz.dart';
+import 'package:quiz/services/quiz_db.dart';
 import 'package:quiz/widgets/bold_text.dart';
 import 'package:quiz/widgets/my_chip.dart';
 import 'package:quiz/widgets/quiz_card_status.dart';
 
 class MyQuizCard extends StatelessWidget {
+  final Quiz quiz;
+
+  MyQuizCard(this.quiz);
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -15,7 +21,7 @@ class MyQuizCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            BoldText(text: 'C Language', fontSize: 15),
+            BoldText(text: quiz.course , fontSize: 15),
             SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -28,20 +34,36 @@ class MyQuizCard extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: <Widget>[
-                          MyChip(icon: Icons.date_range, text: '12-Aug-2020'),
+                          MyChip(icon: Icons.date_range, text: quiz.quizDate),
                           SizedBox(width: 32),
-                          MyChip(icon: Icons.timer, text: '15:23'),
+                          MyChip(icon: Icons.timer, text: quiz.quizTime),
                         ],
                       ),
                       SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
-                          QuizCardStatus(number: '20', text: 'Questions'),
                           QuizCardStatus(
-                              number: '12', text: 'Correct', color: Colors.green),
+                              number: quiz.totalQuestions.toString(),
+                              text: 'Ques'),
                           QuizCardStatus(
-                              number: '8', text: 'Wrong', color: Colors.red),
+                              number: quiz.correct.toString(),
+                              icon: Icon(Icons.check,
+                                  size: 18, color: Colors.green),
+                              color: Colors.green),
+                          QuizCardStatus(
+                              number: quiz.wrong.toString(),
+                              icon: Icon(Icons.close,
+                                  size: 18, color: Colors.red),
+                              color: Colors.red),
+                          QuizCardStatus(
+                              number: quiz.answered.toString(),
+                              text: 'Solved',
+                              color: Colors.grey),
+                          QuizCardStatus(
+                              number: quiz.unanswered.toString(),
+                              text: 'Unsolved',
+                              color: Colors.grey),
                         ],
                       )
                     ],
@@ -50,11 +72,16 @@ class MyQuizCard extends StatelessWidget {
                 Container(
                   // color: Colors.green,
 
-                  padding: EdgeInsets.only(left: 32),
+                  padding: EdgeInsets.only(left: 16),
                   child: CircularPercentIndicator(
                     radius: 60,
                     percent: 0.8,
                     circularStrokeCap: CircularStrokeCap.round,
+                    progressColor: quiz.score >= 50 ? Colors.green.shade400 : Colors.red.shade300,
+                    center: BoldText(
+                      text: '${quiz.score}%',
+                      fontSize: 14,
+                    ),
                   ),
                 )
               ],

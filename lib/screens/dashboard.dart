@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz/models/quiz.dart';
 import 'package:quiz/screens/quiz_screen.dart';
 import 'package:quiz/screens/quiz_setup.dart';
 import 'package:quiz/services/db_helper.dart';
@@ -9,6 +10,7 @@ import 'package:quiz/widgets/bold_text.dart';
 import 'package:quiz/widgets/course.dart';
 import 'package:quiz/widgets/my_quiz_card.dart';
 import 'package:quiz/widgets/simple_text.dart';
+import 'package:quiz/models/question.dart';
 
 class Dashboard extends StatefulWidget {
   @override
@@ -17,6 +19,23 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   DBHelper helper = DBHelper.instance;
+  List<Quiz> quizList = [];
+
+  void getQuiz() async {
+    List<Quiz> temp = await QuizDB.instance.getAllQuizData();
+
+    if (temp != null) {
+      setState(() {
+        quizList = temp;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getQuiz();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,13 +85,11 @@ class _DashboardState extends State<Dashboard> {
               child: BoldText(text: 'My Quizes', fontSize: 16),
             ),
             Expanded(
-              child: ListView(
-                children: <Widget>[
-                  MyQuizCard(),
-                  MyQuizCard(),
-                  MyQuizCard(),
-                  MyQuizCard(),
-                ],
+              child: ListView.builder(
+                itemCount: quizList.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return MyQuizCard(quizList[index]);
+                },
               ),
             )
           ],

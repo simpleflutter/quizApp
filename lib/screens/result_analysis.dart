@@ -13,7 +13,7 @@ class ResultAnalysis extends StatelessWidget {
         padding: EdgeInsets.all(16),
         children: <Widget>[
           SizedBox(height: 24),
-          MyQuizCard(),
+         // MyQuizCard(),
 
           //Question Text
           Padding(
