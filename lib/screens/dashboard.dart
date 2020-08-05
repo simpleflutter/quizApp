@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:quiz/models/quiz.dart';
 import 'package:quiz/screens/quiz_screen.dart';
 import 'package:quiz/screens/quiz_setup.dart';
+import 'package:quiz/screens/result_analysis.dart';
 import 'package:quiz/services/db_helper.dart';
 import 'package:quiz/services/quiz_db.dart';
 import 'package:quiz/utils/app_navigator.dart';
@@ -85,12 +86,24 @@ class _DashboardState extends State<Dashboard> {
               child: BoldText(text: 'My Quizes', fontSize: 16),
             ),
             Expanded(
-              child: ListView.builder(
-                itemCount: quizList.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return MyQuizCard(quizList[index]);
-                },
-              ),
+              child: quizList.length == 0
+                  ? Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      itemCount: quizList.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return MyQuizCard(
+                          quizList[index],
+                          onTap: () {
+                            AppNavigator.push(
+                              context,
+                              ResultAnalysis(
+                                quizList[index],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
             )
           ],
         ),

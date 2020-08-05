@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:quiz/models/quiz.dart';
 import 'package:quiz/screens/dashboard.dart';
 import 'package:quiz/screens/quiz_setup.dart';
+import 'package:quiz/screens/result_analysis.dart';
+import 'package:quiz/services/quiz_db.dart';
 import 'package:quiz/utils/app_navigator.dart';
 import 'package:quiz/widgets/app_button.dart';
 import 'package:quiz/widgets/bold_text.dart';
@@ -69,7 +72,14 @@ class ResultScreen extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: AppButton(
                 text: 'Result Analysis ',
-                onPressed: () {},
+                onPressed: () async {
+                  Quiz quiz = await QuizDB.instance.getQuizById(currentQizId);
+
+                  AppNavigator.pushReplacement(
+                    context,
+                    ResultAnalysis(quiz),
+                  );
+                },
                 height: 40,
               ),
             ),
@@ -80,7 +90,6 @@ class ResultScreen extends StatelessWidget {
                 text: 'Play Quiz Again',
                 onPressed: () {
                   AppNavigator.pushReplacement(context, QuizSetup());
-
                 },
                 height: 40,
               ),

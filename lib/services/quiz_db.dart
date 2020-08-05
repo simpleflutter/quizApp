@@ -158,8 +158,21 @@ class QuizDB {
     for (int i = 0; i < maps.length; i++) {
       quizes.add(Quiz.fromMap(maps[i]));
     }
-    print('Inside getAllQuizData()');
-    print(quizes);
+    // print('Inside getAllQuizData()');
+    // print(quizes);
     return quizes;
+  }
+
+  Future<Quiz> getQuizById(int quizID) async {
+    Database db = await DBHelper.instance.database;
+
+    List<Map<String, dynamic>> maps =
+        await db.rawQuery('select * from quiz where id = ?', [quizID]);
+
+    Quiz quiz;
+
+    quiz = Quiz.fromMap(maps[0]);
+
+    return quiz;
   }
 }
